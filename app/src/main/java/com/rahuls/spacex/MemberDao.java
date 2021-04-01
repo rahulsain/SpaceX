@@ -16,6 +16,6 @@ public interface MemberDao {
     void insert(Member member);
 
     @Query("DELETE FROM task")
-    void delete();
+    void deleteAll();
 
 }

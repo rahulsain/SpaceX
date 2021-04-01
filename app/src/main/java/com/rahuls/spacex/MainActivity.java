@@ -214,7 +214,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void deleteAll(View view) {
-        DatabaseClient.getInstance(MainActivity.this).getAppDatabase().memberDao().delete();
+        DatabaseClient.getInstance(MainActivity.this).getAppDatabase().memberDao().deleteAll();
         fetchfromRoom();
     }
 
