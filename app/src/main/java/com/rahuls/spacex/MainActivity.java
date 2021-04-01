@@ -16,13 +16,10 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.android.volley.RequestQueue;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonArrayRequest;
 import com.android.volley.toolbox.Volley;
 import com.google.gson.JsonSyntaxException;
 
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -72,30 +69,22 @@ public class MainActivity extends AppCompatActivity {
 
     private void fetchfromRoom() {
 
-        Thread thread = new Thread(new Runnable() {
-            @Override
-            public void run() {
+        Thread thread = new Thread(() -> {
 
 
-                List<Member> recipeList = DatabaseClient.getInstance(MainActivity.this).getAppDatabase().memberDao().getAll();
-                arrayList.clear();
-                for (Member rep: recipeList) {
-                    Crew repo = new Crew(rep.getId(),
-                            rep.getName(),
-                            rep.getAgency(),
-                            rep.getImage(),
-                            rep.getWikipedia(),
-                            rep.getStatus());
-                    arrayList.add(repo);
-                }
-                // refreshing recycler view
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        adapter.notifyDataSetChanged();
-                    }
-                });
+            List<Member> recipeList = DatabaseClient.getInstance(MainActivity.this).getAppDatabase().memberDao().getAll();
+            arrayList.clear();
+            for (Member rep: recipeList) {
+                Crew repo = new Crew(rep.getId(),
+                        rep.getName(),
+                        rep.getAgency(),
+                        rep.getImage(),
+                        rep.getWikipedia(),
+                        rep.getStatus());
+                arrayList.add(repo);
             }
+            // refreshing recycler view
+            runOnUiThread(() -> adapter.notifyDataSetChanged());
         });
         thread.start();
 
@@ -106,61 +95,55 @@ public class MainActivity extends AppCompatActivity {
         pb.setVisibility(View.VISIBLE);
 
         JsonArrayRequest request = new JsonArrayRequest(FETCHURL,
-                new Response.Listener<JSONArray>() {
-                    @Override
-                    public void onResponse(JSONArray response) {
-                            if (response == null) {
-                                pb.setVisibility(View.GONE);
-                                Toast.makeText(getApplicationContext(), "Couldn't fetch the menu! Pleas try again.", Toast.LENGTH_LONG).show();
-                                return;
-                            }
-                        try{
-                            for(int i=0;i<response.length();i++){
-                                // Get current json object
-                                JSONObject country = response.getJSONObject(i);
+                response -> {
+                        if (response == null) {
+                            pb.setVisibility(View.GONE);
+                            Toast.makeText(getApplicationContext(), "Couldn't fetch the menu! Pleas try again.", Toast.LENGTH_LONG).show();
+                            return;
+                        }
+                    try{
+                        for(int i=0;i<response.length();i++){
+                            // Get current json object
+                            JSONObject country = response.getJSONObject(i);
 
 
-                                Crew continent = new Crew(
+                            Crew continent = new Crew(
 //                                        country.getLong("id"),
 //                                        country.getString("name"),
 //                                        country.getString("agency"),
 //                                        country.getString("image"),
 //                                        country.getString("wikipedia"),
 //                                        country.getString("status")
-                                );
+                            );
 
 //                                 Get the current student (json object) data
-                                continent.setName(country.getString("name"));
-                                continent.setAgency(country.getString("agency"));
-                                continent.setImage(country.getString("image"));
-                                continent.setWikipedia(country.getString("wikipedia"));
-                                continent.setStatus(country.getString("status"));
+                            continent.setName(country.getString("name"));
+                            continent.setAgency(country.getString("agency"));
+                            continent.setImage(country.getString("image"));
+                            continent.setWikipedia(country.getString("wikipedia"));
+                            continent.setStatus(country.getString("status"));
 
-                                // Display the formatted json data in text view
-                                arrayList.add(continent);
-                            }
-                        }catch (JsonSyntaxException | JSONException e){
-                            e.printStackTrace();
+                            // Display the formatted json data in text view
+                            arrayList.add(continent);
                         }
-
-
-                            // refreshing recycler view
-                            adapter.notifyDataSetChanged();
-
-                            pb.setVisibility(View.GONE);
-
-                            saveTask();
-
+                    }catch (JsonSyntaxException | JSONException e){
+                        e.printStackTrace();
                     }
-                }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-                // error in getting json
-                pb.setVisibility(View.GONE);
-                Log.e("TAG", "Error: " + error.getMessage());
-                Toast.makeText(getApplicationContext(), "Error: " + error.getMessage(), Toast.LENGTH_SHORT).show();
-            }
-        });
+
+
+                        // refreshing recycler view
+                        adapter.notifyDataSetChanged();
+
+                        pb.setVisibility(View.GONE);
+
+                        saveTask();
+
+                }, error -> {
+                    // error in getting json
+                    pb.setVisibility(View.GONE);
+                    Log.e("TAG", "Error: " + error.getMessage());
+                    Toast.makeText(getApplicationContext(), "Error: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+                });
 
         RequestQueue requestQueue = Volley.newRequestQueue(this);
 
@@ -181,7 +164,7 @@ public class MainActivity extends AppCompatActivity {
                 recipes = arrayList;
 
                 if(recipes == null) {
-                    DatabaseClient.getInstance(getApplicationContext()).getAppDatabase().memberDao().insert(new  Member());
+                    DatabaseClient.getInstance(getApplicationContext()).addMembers(new Member());
                     return null;
                 }
 
@@ -195,7 +178,7 @@ public class MainActivity extends AppCompatActivity {
                     recipe.setImage(recipes.get(i).getImage());
                     recipe.setWikipedia(recipes.get(i).getWikipedia());
                     recipe.setStatus(recipes.get(i).getStatus());
-                    DatabaseClient.getInstance(getApplicationContext()).getAppDatabase().memberDao().insert(recipe);
+                    DatabaseClient.getInstance(getApplicationContext()).addMembers(recipe);
                 }
 
 
@@ -214,7 +197,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void deleteAll(View view) {
-        DatabaseClient.getInstance(MainActivity.this).getAppDatabase().memberDao().deleteAll();
+        DatabaseClient.getInstance(MainActivity.this).delete();
         fetchfromRoom();
     }
 
